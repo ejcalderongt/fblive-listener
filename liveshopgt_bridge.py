@@ -71,6 +71,11 @@ UI_NOISE_WORDS = {
     "fijar", "fijado", "pin", "pinned", "comentario", "comment"
 }
 
+GREETING_PATTERNS = [
+    "buenos dias", "buen día", "buen dia", "buenas tardes", "buenas noches",
+    "hola", "holi", "saludos", "bendiciones", "feliz noche", "feliz dia", "feliz día"
+]
+
 SALE_HINTS = {
     "quiero", "precio", "cuanto", "cuánto", "talla", "color", "envio", "envío",
     "pago", "factura", "pedido", "apartame", "apártame", "disponible", "stock"
@@ -172,11 +177,33 @@ def is_tag_only_comment(text: str) -> bool:
     return False
 
 
+def is_emoji_or_greeting_comment(text: str) -> bool:
+    t = normalize_comment_text(text)
+    if not t:
+        return True
+
+    low = t.lower()
+    if any(h in low for h in SALE_HINTS):
+        return False
+
+    # Saludos y frases sociales cortas.
+    if any(p in low for p in GREETING_PATTERNS):
+        return True
+
+    # Solo emojis/símbolos/puntuación (sin letras ni números).
+    if not re.search(r"[a-záéíóúüñ0-9]", low, flags=re.IGNORECASE):
+        return True
+
+    return False
+
+
 def should_skip(text: str) -> bool:
     t = normalize_comment_text(text).lower()
     if not t:
         return True
     if any(p in t for p in SKIP_PATTERNS):
+        return True
+    if is_emoji_or_greeting_comment(t):
         return True
     if is_tag_only_comment(t):
         return True
